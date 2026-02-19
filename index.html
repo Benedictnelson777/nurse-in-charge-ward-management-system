@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WardMate — Nurse Incharge System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer"
+        style="position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px;">
+    </div>
+
+    <!-- PATIENT MODAL -->
+    <div id="patientModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="card-header">
+                <div>
+                    <div id="pm-name" style="font-size:1.1rem; font-weight:800;">—</div>
+                    <div id="pm-meta" style="font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem;">—</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <span id="pm-status-badge" class="badge badge-teal">—</span>
+                    <button onclick="closePatientModal()" class="btn btn-secondary btn-icon">×</button>
+                </div>
+            </div>
+            <div id="pm-body" class="card-body"></div>
+            <div id="pm-actions" class="card-body" style="padding-top:0; display:flex; gap:0.5rem;"></div>
+        </div>
+    </div>
+
+    <!-- ADMIT MODAL -->
+    <div id="admitModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="card-header">
+                <div id="admit-title" style="font-weight:800;">Admit Patient</div>
+                <button onclick="closeAdmitModal()" class="btn btn-secondary btn-icon">×</button>
+            </div>
+            <div id="admit-body" class="card-body"></div>
+            <div class="card-body" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button onclick="closeAdmitModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="confirmAdmit()" class="btn btn-primary">Admit Patient</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INCIDENT MODAL -->
+    <div id="incidentModal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <div class="card-header">
+                <div style="font-weight:800;">Log Incident</div>
+                <button onclick="closeIncidentModal()" class="btn btn-secondary btn-icon">×</button>
+            </div>
+            <div class="card-body">
+                <div style="margin-bottom:1rem;">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">Type</label>
+                    <select id="inc-type" class="select">
+                        <option value="fall">Patient Fall</option>
+                        <option value="medication">Medication Error</option>
+                        <option value="near-miss">Near Miss</option>
+                        <option value="equipment">Equipment Failure</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">Location</label>
+                    <select id="inc-ward" class="select">
+                        <option value="gen">General Ward</option>
+                        <option value="mat">Maternity Ward</option>
+                        <option value="icu">ICU</option>
+                        <option value="surg">Surgical Ward</option>
+                        <option value="ped">Pediatric Ward</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">Patient</label>
+                    <input id="inc-patient" type="text" placeholder="Name or N/A" class="input">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">Description</label>
+                    <textarea id="inc-desc" rows="3" class="textarea" placeholder="Detail the event..."></textarea>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label
+                        style="display:block; font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.4rem;">Severity</label>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button onclick="selectSeverity('low',this)" class="btn btn-secondary sev-btn"
+                            style="flex:1;">Low</button>
+                        <button onclick="selectSeverity('moderate',this)" class="btn btn-secondary sev-btn"
+                            style="flex:1;">Moderate</button>
+                        <button onclick="selectSeverity('high',this)" class="btn btn-secondary sev-btn"
+                            style="flex:1;">High</button>
+                    </div>
+                </div>
+                <input type="hidden" id="inc-severity" value="low">
+                <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+                    <button onclick="closeIncidentModal()" class="btn btn-secondary">Cancel</button>
+                    <button onclick="submitIncident()" class="btn btn-danger">Log Incident</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <header class="app-header">
+        <div class="logo-box">W</div>
+        <div>
+            <div style="font-weight:900; font-size:0.9rem;">WardMate</div>
+            <div style="font-size:0.65rem; color:rgba(255,255,255,0.5);">Nurse Incharge System</div>
+        </div>
+        <div style="width:1px; height:24px; background:var(--border-med); margin:0 0.5rem;"></div>
+        <div id="shiftPill" class="badge" style="border:1px solid var(--border-light);"></div>
+        <div style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; color:var(--text-muted);">
+            <span>Incharge: <strong style="color:white;" id="inchargeName">—</strong></span>
+        </div>
+        <div id="critBanner" class="hidden badge badge-red anim-pulse"
+            style="display:flex; align-items:center; gap:0.5rem;">
+            <span style="width:6px; height:6px; border-radius:50%; background:currentColor;"></span>
+            <span id="critBannerText">0 critical</span>
+        </div>
+        <div class="ml-auto text-right">
+            <div id="clock" class="font-mono" style="font-weight:700; color:var(--color-teal-500);">00:00:00</div>
+            <div id="dateDisplay" style="font-size:0.65rem; color:var(--text-muted);"></div>
+        </div>
+    </header>
+
+    <div class="app-body">
+        <nav class="sidebar">
+            <div class="sidebar-section">Command Centre</div>
+            <button class="nav-btn active" data-view="overview" onclick="navigate('overview')">
+                <span>📊</span> Dashboard
+                <span id="badge-critical-dash" class="badge badge-red hidden ml-auto"></span>
+            </button>
+            <button class="nav-btn" data-view="reports" onclick="navigate('reports')">
+                <span>📈</span> Reports
+            </button>
+
+            <div class="sidebar-section">Ward Management</div>
+            <button class="nav-btn" data-view="ward-gen" onclick="navigate('ward','gen')">
+                <span>🏥</span> General <span id="badge-gen" class="font-mono ml-auto" style="font-size:0.7rem;"></span>
+            </button>
+            <button class="nav-btn" data-view="ward-mat" onclick="navigate('ward','mat')">
+                <span>👶</span> Maternity <span id="badge-mat" class="font-mono ml-auto"
+                    style="font-size:0.7rem;"></span>
+            </button>
+            <button class="nav-btn" data-view="ward-icu" onclick="navigate('ward','icu')">
+                <span>❤️</span> ICU <span id="badge-icu" class="font-mono ml-auto" style="font-size:0.7rem;"></span>
+            </button>
+            <button class="nav-btn" data-view="ward-surg" onclick="navigate('ward','surg')">
+                <span>🔬</span> Surgical <span id="badge-surg" class="font-mono ml-auto"
+                    style="font-size:0.7rem;"></span>
+            </button>
+            <button class="nav-btn" data-view="ward-ped" onclick="navigate('ward','ped')">
+                <span>🧸</span> Pediatrics <span id="badge-ped" class="font-mono ml-auto"
+                    style="font-size:0.7rem;"></span>
+            </button>
+
+            <div class="sidebar-section">Staffing</div>
+            <button class="nav-btn" data-view="staff" onclick="navigate('staff')">
+                <span>👥</span> Roster & Students
+            </button>
+
+            <div class="sidebar-section">Logistics</div>
+            <button class="nav-btn" data-view="store" onclick="navigate('store')">
+                <span>💊</span> Central Store <span id="badge-stock" class="badge badge-amber hidden ml-auto"></span>
+            </button>
+            <button class="nav-btn" data-view="incidents" onclick="navigate('incidents')">
+                <span>⚠️</span> Incident Log <span id="badge-incidents" class="badge badge-amber hidden ml-auto"></span>
+            </button>
+
+            <div class="sidebar-section" style="color:#a78bfa;">Intelligence</div>
+            <button class="nav-btn" data-view="ai" onclick="navigate('ai')">
+                <span>🧠</span> Smart HR
+            </button>
+        </nav>
+
+        <main class="main-content" id="mainContent">
+
+            <!-- OVERVIEW -->
+            <div id="view-overview" class="view active">
+                <div style="margin-bottom:1.5rem;">
+                    <h2 style="font-size:1.5rem;">Command Centre</h2>
+                    <div style="color:var(--text-muted); font-size:0.9rem;">Real-time hospital overview</div>
+                </div>
+                <div id="kpiPills" class="dashboard-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom:2rem;"></div>
+
+                <div class="dashboard-grid" style="grid-template-columns: 2fr 1fr;">
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Ward Occupancy Status</h3>
+                                <span style="font-size:0.75rem; color:var(--text-muted);">Live Census</span>
+                            </div>
+                            <div id="wardRows" class="card-body" style="display:grid; gap:0.5rem;"></div>
+                        </div>
+                        <div id="critPatientList" class="hidden"></div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Activity Log</h3>
+                            </div>
+                            <div id="activityFeed" style="max-height:400px; overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WARD SKELETON -->
+            <div id="view-ward" class="view hidden">
+                <div
+                    style="display:flex; align-items:center; gap:1rem; border-bottom:1px solid var(--border-light); padding-bottom:1.5rem; margin-bottom:1.5rem;">
+                    <div id="ward-icon"
+                        style="font-size:2.5rem; background:rgba(255,255,255,0.05); padding:0.5rem; border-radius:1rem;">
+                        🏥</div>
+                    <div style="flex:1;">
+                        <h2 id="ward-title" style="font-size:2rem;">—</h2>
+                        <div
+                            style="display:flex; gap:1rem; color:var(--text-muted); font-size:0.9rem; align-items:center;">
+                            <span id="ward-stats-occ" class="font-mono"
+                                style="color:var(--color-teal-500); font-weight:700;">0/0</span>
+                            <span style="width:4px; height:4px; border-radius:50%; background:currentColor;"></span>
+                            <span id="ward-stats-incharge">Incharge: —</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button id="btn-handover" class="btn btn-secondary">📋 Handover</button>
+                        <button id="btn-admit" class="btn btn-primary">+ Admit Patient</button>
+                    </div>
+                </div>
+                <div id="wardBedGrid" class="bed-grid"></div>
+            </div>
+
+            <!-- STAFF -->
+            <div id="view-staff" class="view hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                    <div>
+                        <h2 style="font-size:1.5rem;">Staff Roster</h2>
+                        <div style="color:var(--text-muted);">Today's Shift Allocation</div>
+                    </div>
+                    <div class="text-right">
+                        <div
+                            style="font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">
+                            On Duty</div>
+                        <div id="staffOnDutyCount" class="font-mono"
+                            style="font-size:1.5rem; color:var(--color-teal-500); font-weight:800;">0</div>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Nursing Staff</h3>
+                        </div>
+                        <div id="staffList" class="card-body" style="padding:0;"></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Students on Rotation</h3>
+                        </div>
+                        <div id="studentList" class="card-body" style="padding:0;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STORE -->
+            <div id="view-store" class="view hidden">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
+                    <div>
+                        <h2 style="font-size:1.5rem;">Central Store</h2>
+                        <div style="color:var(--text-muted);">Inventory Management</div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                        <button onclick="filterStore('all')" class="btn btn-secondary btn-icon">All</button>
+                        <button onclick="filterStore('critical')" class="btn btn-secondary btn-icon"
+                            style="color:var(--color-red-500);">Critical</button>
+                        <button onclick="filterStore('low')" class="btn btn-secondary btn-icon"
+                            style="color:var(--color-amber-500);">Low</button>
+                    </div>
+                </div>
+                <div id="storeGrid"
+                    style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:1rem;"></div>
+            </div>
+
+            <!-- REPORTS -->
+            <div id="view-reports" class="view hidden">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
+                    <h2 style="font-size:1.5rem;">Standard Reports</h2>
+                    <button onclick="printReport()" class="btn btn-secondary">🖨️ Export PDF</button>
+                </div>
+                <div id="reportsContainer"></div>
+            </div>
+
+            <!-- INCIDENTS -->
+            <div id="view-incidents" class="view hidden">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem;">
+                    <h2 style="font-size:1.5rem;">Incident Log</h2>
+                    <button onclick="openIncidentModal()" class="btn btn-danger btn-icon">+ Log Incident</button>
+                </div>
+                <div id="incidentList"></div>
+            </div>
+
+            <!-- AI INTELLIGENCE -->
+            <div id="view-ai" class="view hidden">
+                <div style="margin-bottom:2rem;">
+                    <h2 style="font-size:1.5rem;">Smart HR & Analytics</h2>
+                    <div style="color:var(--text-muted);">AI-Powered Ward Insights</div>
+                </div>
+
+                <div class="dashboard-grid"
+                    style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+
+                    <!-- Insight 1: Staff Workload -->
+                    <div class="card">
+                        <div class="card-header"
+                            style="background:rgba(124, 58, 237, 0.1); border-bottom-color:rgba(124, 58, 237, 0.2);">
+                            <h3 style="color:#a78bfa;">Staff Workload AI</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="ai-staff-analysis"
+                                style="font-size:0.9rem; line-height:1.6; color:var(--text-muted);">
+                                Analyzing roster...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insight 2: Supply Chain -->
+                    <div class="card">
+                        <div class="card-header"
+                            style="background:rgba(217, 119, 6, 0.1); border-bottom-color:rgba(217, 119, 6, 0.2);">
+                            <h3 style="color:#fbbf24;">Supply Chain Intelligence</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="ai-stock-analysis"
+                                style="font-size:0.9rem; line-height:1.6; color:var(--text-muted);">
+                                Scanning inventory...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Insight 3: Ward Efficiency -->
+                    <div class="card" style="grid-column: 1 / -1;">
+                        <div class="card-header"
+                            style="background:rgba(16, 185, 129, 0.1); border-bottom-color:rgba(16, 185, 129, 0.2);">
+                            <h3 style="color:#34d399;">Ward Efficiency Report</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="ai-ward-analysis"
+                                style="font-size:0.9rem; line-height:1.6; color:var(--text-muted);">
+                                Compiling census data...
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- AI CHAT COMPONENT -->
+    <div id="aiChatWindow" class="chat-window">
+        <div class="chat-header">
+            <span>🧠 WardMate Assistant</span>
+            <span style="font-size:1.2rem; cursor:pointer;" onclick="toggleChat()">×</span>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+            <div class="chat-bubble bot">Hello! I'm your AI HR Assistant. Ask me about staff workload, leave compliance,
+                or stock levels.</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" class="input" placeholder="Ask something..."
+                onkeydown="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()" class="btn btn-primary btn-icon">➤</button>
+        </div>
+    </div>
+
+    <div id="fabChat" class="chat-fab" onclick="toggleChat()">💬</div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
